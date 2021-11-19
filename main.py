@@ -5,33 +5,30 @@ imgs = []
 imgs_obr = []
 imgs_both = []
 
-# winname = "Test"
-# cv2.namedWindow(winname)
-# cv2.resizeWindow("winname", 500, 700)
-# cv2.createTrackbar("trackbarName", "winname", val, 15, 1) # suwak
-# x = cv2.getTrackbarPos("trackbarName", "winname")
 
 for tram in tram_names:
     img = imread("dane/"+tram+".jpg")
-    imgs.append(img)
-    img_sat = rgb2hsv(img)[:,:,1]
+    img_norm = normalize_size(img)
+    imgs.append(img_norm)
+    img_sat = rgb2hsv(img_norm)[:,:,1]
 
     # recognize segments and choose the best
     segmentated = segmentate_watershed(img_sat)
-    cleaned = discard_small_and_big(segmentated)
+
+    cleaned = discard_small_and_big(segmentated, 20, 400)
     cleaned = cleaned.astype(np.uint8)
 
     masked = cleaned
-    imshow(masked)
+    # imshow(masked)
 
     # eliminate not red
-    red_mask = mask_from_channel(img, 0, 100)
+    red_mask = mask_from_channel(img_norm, 0, 163) #100
     masked = cv2.bitwise_and(cleaned, cleaned, mask = red_mask)
 
     # eliminate white (or blue)
-    # blue_mask = mask_from_channel(img, 2, 200)
-    # blue_mask = cv2.bitwise_not(blue_mask)
-    # masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
+    blue_mask = mask_from_channel(img_norm, 2, 200) # 200
+    blue_mask = cv2.bitwise_not(blue_mask)
+    masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
 
     img_dark = ((img_sat-0.5)/2).clip(0,1)
     res = cv2.add(img_dark, masked.astype(np.float64))
@@ -39,7 +36,8 @@ for tram in tram_names:
     imgs_obr.append(masked)
     imgs_both.append(res)
 
-# show_array(imgs, "oryginały")
+show_array(imgs, "oryginały")
+# show_array(imgs_obr, "segmentated")
 show_array(imgs_obr, "results")
 show_array(imgs_both, "overlapped")
 

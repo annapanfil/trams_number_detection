@@ -12,7 +12,7 @@ def show_array(arr, filename="tramwaje"):
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig(filename, dpi=100)
+    plt.savefig(filename, dpi=50)
     plt.show()
 
 def show(*args):
@@ -22,10 +22,34 @@ def show(*args):
         plt.subplot(1, len(args), i+1)
         imshow(img, cmap='gray')
 
+# preprocessing
+def normalize_size(img):
+    """change proportions to 3:2"""
+    #todo: vertical images!!!
+    h, w, _ = img.shape
+    img_cropped = img
+    print(w/h)
+    if w/h > 3/2 + 0.1: # zbyt panoramiczne
+        #cut both sides
+        new_w = 3*h/2
+        delta = int((w - new_w)/2)
+        img_cropped = img[: , delta:w-delta, :]
+    elif w/h < 3/2 - 0.1: # za wysokie
+        #cut the top and the bottom
+        new_h = int((2*w)/3)
+        delta = int((h - new_h)/2)
+        img_cropped = img[delta:h-delta , :, :]
+
+    """change dpi"""
+    img_cropped = cv2.resize(img_cropped, (900,600))
+
+    return img_cropped
+
+
 
 # processing
 
-def discard_small_and_big(segmentated_img):
+def discard_small_and_big(segmentated_img, min_size_tresh, max_size_tresh):
     """discard small object - noise and big - tram or buildings"""
     label_objects, nb_labels = ndi.label(segmentated_img)
 
@@ -35,7 +59,7 @@ def discard_small_and_big(segmentated_img):
 #     n, bins, patches = plt.hist(sizes[np.logical_and(sizes<1000, sizes>50)])
 #     print(n, bins)
 
-    mask_sizes = np.logical_and(sizes<400, sizes>20) # dobrać wartości do eliminacji małych i dużych obiektów
+    mask_sizes = np.logical_and(sizes<max_size_tresh, sizes>min_size_tresh) # dobrać wartości do eliminacji małych i dużych obiektów
     cleaned = mask_sizes[label_objects]
 
     return cleaned
