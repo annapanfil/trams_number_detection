@@ -1,21 +1,11 @@
 from functions import *
-RED_TRESH = 160
-BLUE_TRESH = 200
-SMALL_TRESH = 20
-BIG_TRESH = 120
-BOUNDING_BOX_FACTOR_X = 1.5
-BOUNDING_BOX_FACTOR_Y = 1.2
 
-
-
-
-"""podejście I - segmentacja na podstawie nasycenia"""
 imgs = []
 imgs_obr = []
-imgs_both = []
 objs = []
 
 for tram in tram_names:
+    # read image and convert to gray based on saturation
     img = imread("dane/"+tram+".jpg")
     img_norm = normalize_size(img)
     imgs.append(img_norm)
@@ -25,14 +15,7 @@ for tram in tram_names:
     segmentated = segmentate_watershed(img_sat)
     segmentated = segmentated.astype(np.uint8)
 
-    # eliminate not red
-    red_mask = mask_from_channel(img_norm, 0, RED_TRESH)
-    masked = cv2.bitwise_and(segmentated, segmentated, mask = red_mask)
-
-    # eliminate white (or blue)
-    blue_mask = mask_from_channel(img_norm, 2, BLUE_TRESH)
-    blue_mask = cv2.bitwise_not(blue_mask)
-    masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
+    masked = apply_masks(img_norm, segmentated, RED_TRESH, BLUE_TRESH)
 
     cleaned = discard_small_and_big(masked, SMALL_TRESH, BIG_TRESH)
     cleaned = cleaned.astype(np.uint8)
@@ -46,26 +29,16 @@ for tram in tram_names:
     cv2.drawContours(img_cont, contours, -1, (255,0,0), 1)
 
     for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        print(x,y,w,h)
-        if (w < 5 or h < 5): continue
-        if (w > h-2): continue # horizontal
-        cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 1)
-
-        # extend bounding box
-        dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
-        dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
-        cv2.rectangle(img_cont, (x-dx,y-dy), (w+x+2*dx, y+h+2*dy), (0,0,255), 1)
-        slice = img_norm[y-dy:y+h+2*dy, x-dx:x+w+2*dx]
-        objs.append(slice)
+        try:
+            slice = process_slice(cnt, img_cont, img_norm, cleaned)
+            objs.append(slice)
+        except SliceDiscardedException as e:
+            print(e.message)
 
     imgs_obr.append(img_cont)
-    # imgs_both.append()
 
 # show_array(imgs, "oryginały")
-# show_array(imgs_obr, "segmentated")
 show_array(imgs_obr, "results")
-# show_array(imgs_both, "overlapped")
 show_array(objs, "objects", 100)
 
 
