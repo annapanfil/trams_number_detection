@@ -1,8 +1,12 @@
 from imports import *
 
 # showing
-def show_array(arr, filename="tramwaje"):
+def show_array(arr, filename="tramwaje", dpi=30):
     "Show a mosaic of images list and save it to jpg"
+    if(len(arr)==0):
+        print("Show_array: Nothing to show")
+        return
+
     cols = int(np.sqrt(len(arr)))
     rows = ceil(len(arr)/cols)
     plt.figure(figsize=(cols*30,rows*20))
@@ -12,7 +16,7 @@ def show_array(arr, filename="tramwaje"):
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig(filename, dpi=30)
+    plt.savefig(filename, dpi=dpi)
     plt.show()
 
 def show(*args):

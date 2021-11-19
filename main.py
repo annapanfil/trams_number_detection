@@ -1,10 +1,19 @@
 from functions import *
+RED_TRESH = 160
+BLUE_TRESH = 200
+SMALL_TRESH = 20
+BIG_TRESH = 120
+BOUNDING_BOX_FACTOR_X = 1.5
+BOUNDING_BOX_FACTOR_Y = 1.2
+
+
+
 
 """podejście I - segmentacja na podstawie nasycenia"""
 imgs = []
 imgs_obr = []
 imgs_both = []
-
+objs = []
 
 for tram in tram_names:
     img = imread("dane/"+tram+".jpg")
@@ -12,31 +21,56 @@ for tram in tram_names:
     imgs.append(img_norm)
     img_sat = rgb2hsv(img_norm)[:,:,1]
 
-    # recognize segments and choose the best
+    # recognize segments
     segmentated = segmentate_watershed(img_sat)
     segmentated = segmentated.astype(np.uint8)
 
     # eliminate not red
-    red_mask = mask_from_channel(img_norm, 0, 160)
+    red_mask = mask_from_channel(img_norm, 0, RED_TRESH)
     masked = cv2.bitwise_and(segmentated, segmentated, mask = red_mask)
 
     # eliminate white (or blue)
-    blue_mask = mask_from_channel(img_norm, 2, 200)
+    blue_mask = mask_from_channel(img_norm, 2, BLUE_TRESH)
     blue_mask = cv2.bitwise_not(blue_mask)
     masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
 
-    cleaned = discard_small_and_big(masked, 20, 120)
+    cleaned = discard_small_and_big(masked, SMALL_TRESH, BIG_TRESH)
+    cleaned = cleaned.astype(np.uint8)
 
-    img_dark = ((img_sat-0.5)/2).clip(0,1)
-    res = cv2.add(img_dark, cleaned.astype(np.float64))
+    del masked
 
-    imgs_obr.append(cleaned)
-    imgs_both.append(res)
+    # recognize edges
+    contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    img_cont = img_norm.copy()
+    cv2.drawContours(img_cont, contours, -1, (255,0,0), 1)
+
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        print(x,y,w,h)
+        if (w < 5 or h < 5): continue
+        if (w > h-2): continue # horizontal
+        cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 1)
+
+        # extend bounding box
+        # img_val = rgb2hsv(img_norm)[:,:,2]
+        dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
+        dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
+        # img_val = img_val[x-dx:x+w+dx, y-dy:y+h+dy]
+        cv2.rectangle(img_cont, (x-dx,y-dy), (w+x+2*dx, y+h+2*dy), (0,0,255), 1)
+        # objs.append(img_norm[x-dx:x+w+2*dx, y-dy:y+h+2*dy])
+        imshow(img_norm[x-dx:x+w+2*dx, y-dy:y+h+2*dy])
+
+    imgs_obr.append(img_cont)
+    # imgs_both.append()
 
 # show_array(imgs, "oryginały")
 # show_array(imgs_obr, "segmentated")
 show_array(imgs_obr, "results")
-show_array(imgs_both, "overlapped")
+# show_array(imgs_both, "overlapped")
+print(objs)
+imshow(objs[-1])
+# show_array(objs, "objects", 100)
 
 
 
