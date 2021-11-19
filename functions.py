@@ -40,7 +40,6 @@ def normalize_size(img):
     #todo: vertical images!!!
     h, w, _ = img.shape
     img_cropped = img
-    print(w/h)
     if w/h > 3/2 + 0.1: # zbyt panoramiczne
         #cut both sides
         new_w = 3*h/2
@@ -53,7 +52,7 @@ def normalize_size(img):
         img_cropped = img[delta:h-delta , :, :]
 
     """change dpi"""
-    img_cropped = cv2.resize(img_cropped, (900,600))
+    img_cropped = cv2.resize(img_cropped, (IMG_W, IMG_H))
 
     return img_cropped
 
@@ -98,35 +97,50 @@ def mask_from_channel(img, x:int, treshold:int ):
     return img_chann_bw
 
 def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
-    """eliminate not enough red or too blue segments"""
+    """eliminate not red enough or too blue segments"""
     # eliminate not red
     red_mask = mask_from_channel(img_src, 0, red_tresh)
     masked = cv2.bitwise_and(img_to_mask, img_to_mask, mask = red_mask)
 
     # eliminate white (or blue)
     blue_mask = mask_from_channel(img_src, 2, blue_tresh)
+    blue_mask = np.where(blue_mask == 1, 255, blue_mask) #change from [0;1] to [0;255]
     blue_mask = cv2.bitwise_not(blue_mask)
     masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
 
     return masked
 
 def check_surroundings(slice, img_cont, img_src, img_clean):
+    """Check if background is gray enough"""
     x,y,w,h = slice
 
     # extend bounding box
     dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
     dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
-    cv2.rectangle(img_cont, (x-dx,y-dy), (w+x+2*dx, y+h+2*dy), (0,0,255), 1)
+    begin_x = np.clip(x-dx, 0, IMG_W)
+    end_x = np.clip(x+w+2*dx, 0, IMG_W)
+    begin_y = np.clip(y-dy, 0, IMG_H)
+    end_y = np.clip(y+h+2*dy, 0, IMG_H)
 
-    # check background color
-    slice = img_src[y-dy:y+h+2*dy, x-dx:x+w+2*dx]
-    mask_slice = img_clean[y-dy:y+h+2*dy, x-dx:x+w+2*dx]
-    mask_slice = cv2.bitwise_not(mask_slice)
+    cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 1)
+
+    # get slices of: original image, values from hsv and cleaned image
+    slice = img_src[begin_y:end_y, begin_x:end_x]
     slice_v = rgb2hsv(slice)[:,:,2]
-    slice_backgnd = cv2.bitwise_and(slice_v, slice_v, mask = mask_slice)
-    np.where(slice_backgnd == 100, np.nan, slice_backgnd)
 
-    if np.median(slice_backgnd > 30): raise SliceDiscardedException("Background not gray")
+    mask_slice = img_clean[begin_y:end_y, begin_x:end_x]
+    mask_slice = np.where(mask_slice == 1, 255, mask_slice) #change from [0;1] to [0;255]
+    mask_slice = cv2.bitwise_not(mask_slice)
+
+    # get background color
+    slice_backgnd = cv2.bitwise_and(slice_v, slice_v, mask = mask_slice)
+
+    # count median without masked values
+    slice_backgnd = np.where(slice_backgnd == 0, np.nan, slice_backgnd)
+    median = np.nanmedian(slice_backgnd)
+
+    if median > 0.3: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
+
     return slice
 
 def process_slice(cnt, img_cont, img_src, img_clean):

@@ -5,6 +5,7 @@ imgs_obr = []
 objs = []
 
 for tram in tram_names:
+    print(tram)
     # read image and convert to gray based on saturation
     img = imread("dane/"+tram+".jpg")
     img_norm = normalize_size(img)
@@ -26,22 +27,22 @@ for tram in tram_names:
     contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     img_cont = img_norm.copy()
-    cv2.drawContours(img_cont, contours, -1, (255,0,0), 1)
+    cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
 
     for cnt in contours:
         try:
             slice = process_slice(cnt, img_cont, img_norm, cleaned)
             objs.append(slice)
         except SliceDiscardedException as e:
+            # if e.message == "Background not gray":
             print(e.message)
+            # pass
 
     imgs_obr.append(img_cont)
 
-# show_array(imgs, "oryginały")
+show_array(imgs, "oryginały")
 show_array(imgs_obr, "results")
 show_array(objs, "objects", 100)
-
-
 
 
 # """ Podejście drugie - wykrywanie konturów - canny + findContours """
