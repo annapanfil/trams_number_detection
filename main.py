@@ -53,13 +53,11 @@ for tram in tram_names:
         cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 1)
 
         # extend bounding box
-        # img_val = rgb2hsv(img_norm)[:,:,2]
         dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
         dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
-        # img_val = img_val[x-dx:x+w+dx, y-dy:y+h+dy]
         cv2.rectangle(img_cont, (x-dx,y-dy), (w+x+2*dx, y+h+2*dy), (0,0,255), 1)
-        # objs.append(img_norm[x-dx:x+w+2*dx, y-dy:y+h+2*dy])
-        imshow(img_norm[x-dx:x+w+2*dx, y-dy:y+h+2*dy])
+        slice = img_norm[y-dy:y+h+2*dy, x-dx:x+w+2*dx]
+        objs.append(slice)
 
     imgs_obr.append(img_cont)
     # imgs_both.append()
@@ -68,9 +66,7 @@ for tram in tram_names:
 # show_array(imgs_obr, "segmentated")
 show_array(imgs_obr, "results")
 # show_array(imgs_both, "overlapped")
-print(objs)
-imshow(objs[-1])
-# show_array(objs, "objects", 100)
+show_array(objs, "objects", 100)
 
 
 
