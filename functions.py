@@ -12,7 +12,7 @@ def show_array(arr, filename="tramwaje"):
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig(filename, dpi=50)
+    plt.savefig(filename, dpi=30)
     plt.show()
 
 def show(*args):
