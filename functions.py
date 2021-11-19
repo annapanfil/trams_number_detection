@@ -8,13 +8,13 @@ class SliceDiscardedException(Exception):
 ###############################################################################
 
 # showing
-def show_array(arr, filename="tramwaje", dpi=30):
+def show_array(arr, filename="tramwaje", dpi=30, cols = None):
     "Show a mosaic of images list and save it to jpg"
     if(len(arr)==0):
         print("Show_array: Nothing to show")
         return
-
-    cols = int(np.sqrt(len(arr)))
+    if cols == None:
+        cols = int(np.sqrt(len(arr)))
     rows = ceil(len(arr)/cols)
     plt.figure(figsize=(cols*30,rows*20))
 
@@ -92,7 +92,7 @@ def mask_from_channel(img, x:int, treshold:int ):
     img_chann = img[:,:,x]
 
     img_chann_bw = np.zeros_like(img_chann)
-    img_chann_bw[img_chann > treshold] = 1
+    img_chann_bw[img_chann > treshold] = 255
 
     return img_chann_bw
 
@@ -104,7 +104,6 @@ def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
 
     # eliminate white (or blue)
     blue_mask = mask_from_channel(img_src, 2, blue_tresh)
-    blue_mask = np.where(blue_mask == 1, 255, blue_mask) #change from [0;1] to [0;255]
     blue_mask = cv2.bitwise_not(blue_mask)
     masked = cv2.bitwise_and(masked, masked, mask = blue_mask)
 
@@ -149,9 +148,9 @@ def process_slice(cnt, img_cont, img_src, img_clean):
     x, y, w, h = cv2.boundingRect(cnt)
     if (w < 5 or h < 5): raise SliceDiscardedException("Too thin")
     if (w > h-2): raise SliceDiscardedException("Horizontal")
-    cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 1)
 
     slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean)
+    cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 2)
 
     return slice
 

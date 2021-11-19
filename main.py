@@ -3,6 +3,7 @@ from functions import *
 imgs = []
 imgs_obr = []
 objs = []
+objs_cnt = []
 
 for tram in tram_names:
     print(tram)
@@ -21,7 +22,7 @@ for tram in tram_names:
     cleaned = discard_small_and_big(masked, SMALL_TRESH, BIG_TRESH)
     cleaned = cleaned.astype(np.uint8)
 
-    del masked
+    # del masked
 
     # recognize edges
     contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -29,19 +30,24 @@ for tram in tram_names:
     img_cont = img_norm.copy()
     cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
 
+    i = 0
     for cnt in contours:
         try:
             slice = process_slice(cnt, img_cont, img_norm, cleaned)
             objs.append(slice)
+            i = i+1
         except SliceDiscardedException as e:
             # if e.message == "Background not gray":
             print(e.message)
             # pass
+    objs_cnt.append(i)
+    # show_array([masked, cleaned, img_cont], cols=3)
 
     imgs_obr.append(img_cont)
 
 show_array(imgs, "oryginały")
 show_array(imgs_obr, "results")
+print(objs_cnt)
 show_array(objs, "objects", 100)
 
 
