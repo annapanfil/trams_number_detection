@@ -5,16 +5,16 @@ IMG_H = 600
 MINI_IMG_W = 450
 MINI_IMG_H = 300
 
-RED_TRESH = 140   # discards all pixels with lower red
-BLUE_TRESH = 130  # discards pixels with higher blue than this
-SMALL_TRESH = 20  # discards smaller
-BIG_TRESH = 300  # discards bigger
-BOUNDING_BOX_FACTOR_X = 1.5
-BOUNDING_BOX_FACTOR_Y = 1.2
-
-BB_MIN_WIDHT = 5
-BB_MIN_HEIGHT = 7
-GREY_BCKG_LVL = 0.3
+# RED_TRESH = 140   # discards all pixels with lower red
+# BLUE_TRESH = 130  # discards pixels with higher blue than this
+# SMALL_TRESH = 20  # discards smaller
+# BIG_TRESH = 300  # discards bigger
+# BOUNDING_BOX_FACTOR_X = 1.5
+# BOUNDING_BOX_FACTOR_Y = 1.2
+#
+# BB_MIN_WIDHT = 5
+# BB_MIN_HEIGHT = 7
+# GREY_BCKG_LVL = 0.3
 
 ################################################################################
 #libraries
