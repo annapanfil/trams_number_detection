@@ -30,25 +30,32 @@ for tram in tram_names:
     img_cont = img_norm.copy()
     cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
 
-    i = 0
+    objs = []
+    i=0
+    digits = []
     for cnt in contours:
         try:
             slice = process_slice(cnt, img_cont, img_norm, cleaned)
             objs.append(slice)
+            digit = digits_processing(slice)
+            digit = digit.replace('\n', '')
+            print(digit)
+            digits.append(digit)
             i = i+1
         except SliceDiscardedException as e:
             # if e.message == "Background not gray":
-            print(e.message)
-            # pass
+                # print(e.message)
+            pass
+    print(digits)
+    show_array(objs, "objects"+tram, cols=2)
     objs_cnt.append(i)
     # show_array([masked, cleaned, img_cont], cols=3)
 
     imgs_obr.append(img_cont)
 
-show_array(imgs, "oryginały")
-show_array(imgs_obr, "results")
-print(objs_cnt)
-show_array(objs, "objects", 100)
+# show_array(imgs, "oryginały")
+# show_array(imgs_obr, "results")
+# print(objs_cnt)
 
 
 # """ Podejście drugie - wykrywanie konturów - canny + findContours """

@@ -117,9 +117,9 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
     dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
     dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
     begin_x = np.clip(x-dx, 0, IMG_W)
-    end_x = np.clip(x+w+2*dx, 0, IMG_W)
+    end_x = np.clip(x+w+dx, 0, IMG_W)
     begin_y = np.clip(y-dy, 0, IMG_H)
-    end_y = np.clip(y+h+2*dy, 0, IMG_H)
+    end_y = np.clip(y+h+dy, 0, IMG_H)
 
     cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 1)
 
@@ -140,8 +140,6 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
 
     if median > 0.3: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
 
-    return slice
-
 def process_slice(cnt, img_cont, img_src, img_clean):
     """determine wheter slice can be a number"""
     # draw bounding box
@@ -152,8 +150,21 @@ def process_slice(cnt, img_cont, img_src, img_clean):
     slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean)
     cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 2)
 
-    return slice
+    slice_bw = img_clean[y-2:y+h+2, x-2:x+w+2]
+    slice_bw = np.where(slice_bw == 1, 255, slice_bw) #change from [0;1] to [0;255]
+    slice_bw = cv2.bitwise_not(slice_bw)
 
+    return slice_bw
+
+
+
+################################################################################
+# tekst preprocessing
+def digits_processing(img):
+    custom_config = r'--psm 10 --oem 3 outputbase digits' #single char, default ocr engine,
+    digit = pytesseract.image_to_string(img,config=custom_config)
+    return digit
+    
 ################################################################################
 # old
 
