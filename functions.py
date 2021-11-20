@@ -1,4 +1,4 @@
-from imports import *
+# from imports import *
 
 
 class SliceDiscardedException(Exception):
@@ -24,7 +24,7 @@ def show_array(arr, filename="tramwaje", dpi=30, cols = None):
         ax.set_yticks([])
         imshow(img, cmap='gray')
     plt.savefig("output/"+filename, dpi=dpi)
-    plt.show()
+    # plt.show()
 
 def show(*args, filename = None):
     """Show multiple images in a row"""
@@ -48,7 +48,7 @@ def show_text(texts: list):
     return img
 
 
-def results_comparision(img_norm, img_cont, digits: list, filename: str):
+def results_comparision(img_norm, img_cont, digits: set, filename: str):
     number_str = ''.join(digits)
     # img_norm_mini = cv2.resize(img_norm, (MINI_IMG_W, MINI_IMG_H))
     img_cont_mini = cv2.resize(img_cont, (MINI_IMG_W, MINI_IMG_H))
@@ -57,6 +57,33 @@ def results_comparision(img_norm, img_cont, digits: list, filename: str):
     res = np.hstack((img_cont_mini, show_text(text))) #img_norm_mini
 
     return res
+
+
+def print_stats(imgs: int, true_positive: list, false_positive: list, false_negative: list, long=True):
+    tp = len(true_positive)
+    fp = len(false_positive)
+    fn = len(false_negative)
+    all = tp + fp + fn
+    if long:
+        print("PARAMETRY\n------------------------")
+        print(f"RED_TRESH {RED_TRESH}\nBLUE_TRESH {BLUE_TRESH}\nSMALL_TRESH {SMALL_TRESH}\nBIG_TRESH {BIG_TRESH}")
+        print(f"BOUNDING_BOX_FACTOR_X {BOUNDING_BOX_FACTOR_X}\nBOUNDING_BOX_FACTOR_Y {BOUNDING_BOX_FACTOR_Y}\nBB_MIN_WIDHT {BB_MIN_WIDHT}\nBB_MIN_HEIGHT {BB_MIN_HEIGHT}\nGREY_BCKG_LVL {GREY_BCKG_LVL}")
+        print("")
+        print("STATYSTYKI\n------------------------")
+        print(f"Liczba zdjęć: {imgs}")
+        print(f"Wszystkich cyfr: {all}")
+        print("")
+        print(f"Poprawnie rozpoznanych cyfr (TP): {tp} czyli {tp*100/all:.2f}%")
+        print(f"Inne obiekty uznane za cyfry (FP): {fp} czyli {fp*100/all:.2f}%")
+        print(f"Nierozpoznanych cyfr (FN): {fn} czyli {fn*100/all:.2f}%")
+        print("")
+        print(f"Cyfra najczęściej poprawnie rozpoznawana (TP): {mode(true_positive)[0]}")
+        print(f"Cyfra najczęściej rozpoznawana tam gdzie jej nie ma (FP): {mode(false_positive)[0]}")
+        print(f"Cyfra najczęściej nierozpoznawana (FN): {mode(false_negative)[0]}")
+    else:
+        print(f"{RED_TRESH};{BLUE_TRESH};{SMALL_TRESH};{BIG_TRESH};{BOUNDING_BOX_FACTOR_X};{BOUNDING_BOX_FACTOR_Y};{BB_MIN_WIDHT};{BB_MIN_HEIGHT};{GREY_BCKG_LVL};{tp*100/all:.2f};{fp*100/all:.2f};{fn*100/all:.2f};{mode(true_positive)[0]};{mode(false_positive)[0]};{mode(false_negative)[0]}")
+
+
 
 ################################################################################
 # preprocessing
@@ -166,14 +193,14 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
     slice_backgnd = np.where(slice_backgnd == 0, np.nan, slice_backgnd)
     median = np.nanmedian(slice_backgnd)
 
-    if median > 0.3: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
+    if median > GREY_BCKG_LVL: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
 
 
 def process_slice(cnt, img_cont, img_src, img_clean):
     """determine wheter slice can be a number"""
     # draw bounding box
     x, y, w, h = cv2.boundingRect(cnt)
-    if (w < 5 or h < 5): raise SliceDiscardedException("Too thin")
+    if (w < BB_MIN_WIDHT or h < BB_MIN_HEIGHT): raise SliceDiscardedException("Too thin")
     if (w > h-2): raise SliceDiscardedException("Horizontal")
 
     slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean)
@@ -186,28 +213,23 @@ def process_slice(cnt, img_cont, img_src, img_clean):
     return slice_bw
 
 ################################################################################
-# tekst preprocessing
+# tekst processing
 def digits_processing(img):
-    custom_config = r'--psm 10 --oem 3 outputbase digits' #single char, default ocr engine,
+    custom_config = r'--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789X' #single char, default ocr engine,  outputbase digits
     digit = pytesseract.image_to_string(img,config=custom_config)
     digit = digit.replace('\n', '')
+    digit = digit.strip()
     return digit
 
-################################################################################
-# old
+def analyze_results(digits: set, filename: str):
+    digits.discard('')
+    for digit in digits:
+        if len(digit) != 1: print (f"!!!!{digit}")
 
-def draw_circles(img):
-    """ Detect circles in the image and draw them """
-    """ cf. [6]"""
+    true_digits = set(filename.split("_")[0])
 
-    output = img.copy()
-    circles = cv2.HoughCircles(edged, cv2.HOUGH_GRADIENT, 1.2, 100) #maxRadius=100
+    true_positive = true_digits & digits
+    false_positive = digits - true_digits
+    false_negative = true_digits - digits
 
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int") # (x, y) coordinates and radius to int
-        for (x, y, r) in circles:
-            # draw circle and center on the output image
-            cv2.circle(output, (x, y), r, (0, 255, 0), 3)
-            cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1) # center
-
-    return output
+    return (true_positive, false_positive, false_negative)

@@ -1,50 +1,57 @@
 from functions import *
 
-# imgs = []
-imgs_obr = []
+def recognize_tram_number():
+    imgs_obr = []
 
-for tram in tram_names:
-    print(tram)
-    # read image and convert to gray based on saturation
-    img = imread("dane/"+tram+".jpg")
-    img_norm = normalize_size(img)
-    # imgs.append(img_norm)
-    img_sat = rgb2hsv(img_norm)[:,:,1]
+    true_positive = []
+    false_positive = []
+    false_negative = []
 
-    # recognize segments
-    segmentated = segmentate_watershed(img_sat)
-    segmentated = segmentated.astype(np.uint8)
+    for tram in tram_names:
+        # read image and convert to gray based on saturation
+        img = imread("dane/"+tram+".jpg")
+        img_norm = normalize_size(img)
+        img_sat = rgb2hsv(img_norm)[:,:,1]
 
-    masked = apply_masks(img_norm, segmentated, RED_TRESH, BLUE_TRESH)
+        # recognize segments
+        segmentated = segmentate_watershed(img_sat)
+        segmentated = segmentated.astype(np.uint8)
 
-    cleaned = discard_small_and_big(masked, SMALL_TRESH, BIG_TRESH)
-    cleaned = cleaned.astype(np.uint8)
+        masked = apply_masks(img_norm, segmentated, RED_TRESH, BLUE_TRESH)
 
-    # del masked
+        cleaned = discard_small_and_big(masked, SMALL_TRESH, BIG_TRESH)
+        cleaned = cleaned.astype(np.uint8)
 
-    # recognize edges
-    contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cleaned = apply_masks(img_norm, cleaned, RED_TRESH, BLUE_TRESH)
 
-    img_cont = img_norm.copy()
-    cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
+        # recognize edges
+        contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    digits = []
-    for cnt in contours:
-        try:
-            slice = process_slice(cnt, img_cont, img_norm, cleaned)
-            digit = digits_processing(slice)
-            digits.append(digit)
-        except SliceDiscardedException as e:
-            # if e.message == "Background not gray":
-                # print(e.message)
-            pass
+        img_cont = img_norm.copy()
+        cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
 
-    res = results_comparision(img_norm, img_cont, digits, tram)
-    # show(res)
-    imgs_obr.append(res)
+        digits = set()
+        for cnt in contours:
+            try:
+                slice = process_slice(cnt, img_cont, img_norm, cleaned)
+                digit = digits_processing(slice)
+                digits.add(digit)
+            except SliceDiscardedException as e:
+                # if e.message == "Background not gray":
+                    # print(e.message)
+                pass
+        res = results_comparision(img_norm, img_cont, digits, tram)
 
-# show_array(imgs, "oryginały")
-res = np.vstack(imgs_obr)
-# show_array(imgs_obr, filename = "result")
-show(res, filename = "results_vertical")
-# show_array(imgs_obr, "results")
+        tp, fp, fn = analyze_results(digits, tram)
+        true_positive += tp
+        false_positive += fp
+        false_negative += fn
+        imgs_obr.append(res)
+
+    # show_array(imgs_obr, "results")
+
+    print_stats(len(tram_names), true_positive, false_positive, false_negative, long=False)
+    # print_stats(len(tram_names), true_positive, false_positive, false_negative)
+
+if __name__ == '__main__':
+    recognize_tram_number()
