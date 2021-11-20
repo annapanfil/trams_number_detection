@@ -23,15 +23,40 @@ def show_array(arr, filename="tramwaje", dpi=30, cols = None):
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig(filename, dpi=dpi)
+    plt.savefig("output/"+filename, dpi=dpi)
     plt.show()
 
-def show(*args):
+def show(*args, filename = None):
     """Show multiple images in a row"""
     plt.figure(figsize=(20,12))
     for i,img in enumerate(args):
         plt.subplot(1, len(args), i+1)
         imshow(img, cmap='gray')
+    if filename != None:
+        print("Saved to output/"+filename)
+        plt.savefig("output/"+filename)
+    plt.show()
+
+
+def show_text(texts: list):
+    """Create an image from text"""
+    img = np.zeros((MINI_IMG_H, MINI_IMG_W,3), np.uint8)
+
+    for i, text in enumerate(texts):
+        cv2.putText(img, text, (10, 30*(i+1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, 2)
+
+    return img
+
+
+def results_comparision(img_norm, img_cont, digits: list, filename: str):
+    number_str = ''.join(digits)
+    # img_norm_mini = cv2.resize(img_norm, (MINI_IMG_W, MINI_IMG_H))
+    img_cont_mini = cv2.resize(img_cont, (MINI_IMG_W, MINI_IMG_H))
+
+    text = ["img: "+ filename, "Recognized text: "+number_str]
+    res = np.hstack((img_cont_mini, show_text(text))) #img_norm_mini
+
+    return res
 
 ################################################################################
 # preprocessing
@@ -109,6 +134,9 @@ def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
 
     return masked
 
+#######################################################
+# slices
+
 def check_surroundings(slice, img_cont, img_src, img_clean):
     """Check if background is gray enough"""
     x,y,w,h = slice
@@ -121,7 +149,7 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
     begin_y = np.clip(y-dy, 0, IMG_H)
     end_y = np.clip(y+h+dy, 0, IMG_H)
 
-    cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 1)
+    cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 2)
 
     # get slices of: original image, values from hsv and cleaned image
     slice = img_src[begin_y:end_y, begin_x:end_x]
@@ -140,6 +168,7 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
 
     if median > 0.3: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
 
+
 def process_slice(cnt, img_cont, img_src, img_clean):
     """determine wheter slice can be a number"""
     # draw bounding box
@@ -156,15 +185,14 @@ def process_slice(cnt, img_cont, img_src, img_clean):
 
     return slice_bw
 
-
-
 ################################################################################
 # tekst preprocessing
 def digits_processing(img):
     custom_config = r'--psm 10 --oem 3 outputbase digits' #single char, default ocr engine,
     digit = pytesseract.image_to_string(img,config=custom_config)
+    digit = digit.replace('\n', '')
     return digit
-    
+
 ################################################################################
 # old
 
