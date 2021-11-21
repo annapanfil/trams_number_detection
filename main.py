@@ -15,7 +15,7 @@ def recognize_tram_number(c: dict):
         img_sat = rgb2hsv(img_norm)[:,:,1]
 
         # recognize segments
-        segmentated = segmentate_watershed(img_sat)
+        segmentated = segmentate_watershed(img_sat, c["WS_LOW"], c["WS_HIGH"])
         segmentated = segmentated.astype(np.uint8)
 
         masked = apply_masks(img_norm, segmentated, c["RED_TRESH"], c["BLUE_TRESH"])
@@ -65,6 +65,8 @@ if __name__ == '__main__':
     BB_MIN_WIDTH = 4
     BB_MIN_HEIGHT = 13
     GREY_BCKG_LVL = 0.4
+    WS_LOW = 0 # 0.1 zmniejsza FP
+    WS_HIGH = 0.9
 
-    consts = {"RED_TRESH": RED_TRESH, "BLUE_TRESH": BLUE_TRESH, "SMALL_TRESH": SMALL_TRESH, "BIG_TRESH": BIG_TRESH, "BB_FACTOR_X": BB_FACTOR_X, "BB_FACTOR_Y": BB_FACTOR_Y, "BB_MIN_WIDTH": BB_MIN_WIDTH, "BB_MIN_HEIGHT": BB_MIN_HEIGHT, "GREY_BCKG_LVL": GREY_BCKG_LVL}
+    consts = {"RED_TRESH": RED_TRESH, "BLUE_TRESH": BLUE_TRESH, "SMALL_TRESH": SMALL_TRESH, "BIG_TRESH": BIG_TRESH, "BB_FACTOR_X": BB_FACTOR_X, "BB_FACTOR_Y": BB_FACTOR_Y, "BB_MIN_WIDTH": BB_MIN_WIDTH, "BB_MIN_HEIGHT": BB_MIN_HEIGHT, "GREY_BCKG_LVL": GREY_BCKG_LVL, "WS_LOW": WS_LOW, "WS_HIGH": WS_HIGH}
     recognize_tram_number(consts)
