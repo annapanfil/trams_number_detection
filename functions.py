@@ -24,7 +24,7 @@ def show_array(arr, filename="tramwaje", dpi=30, cols = None):
         ax.set_yticks([])
         imshow(img, cmap='gray')
     plt.savefig("output/"+filename, dpi=dpi)
-    plt.show()
+    # plt.show()
 
 def show(*args, filename = None):
     """Show multiple images in a row"""
@@ -48,15 +48,49 @@ def show_text(texts: list):
     return img
 
 
-def results_comparision(img_norm, img_cont, digits: list, filename: str):
-    number_str = ''.join(digits)
+def results_comparision(img_norm, img_cont, number: str, filename: str):
+    """Produce an image to visually compare original image and result"""
     # img_norm_mini = cv2.resize(img_norm, (MINI_IMG_W, MINI_IMG_H))
     img_cont_mini = cv2.resize(img_cont, (MINI_IMG_W, MINI_IMG_H))
 
-    text = ["img: "+ filename, "Recognized text: "+number_str]
+    text = ["img: "+ filename, "Recognized text: "+number]
     res = np.hstack((img_cont_mini, show_text(text))) #img_norm_mini
 
     return res
+
+
+def print_stats(c: dict, imgs: int, true_positive: list, false_positive: list, false_negative: list, correct: list, long=True):
+    """Print statistics for program"""
+    tp = len(true_positive)
+    fp = len(false_positive)
+    fn = len(false_negative)
+    corr = len(correct)
+    all = tp + fp + fn
+
+    if long:
+        print("PARAMETRY\n------------------------")
+        print(f'RED_TRESH {c["RED_TRESH"]}\nBLUE_TRESH {c["BLUE_TRESH"]}\nSMALL_TRESH {c["SMALL_TRESH"]}\nBIG_TRESH {c["BIG_TRESH"]}')
+        print(f'BB_FACTOR_X {c["BB_FACTOR_X"]}\nBB_FACTOR_Y {c["BB_FACTOR_Y"]}\nBB_MIN_WIDTH {c["BB_MIN_WIDTH"]}\nBB_MIN_HEIGHT {c["BB_MIN_HEIGHT"]}\nGREY_BCKG_LVL {c["GREY_BCKG_LVL"]}')
+        print("")
+        print("STATYSTYKI\n------------------------")
+        print(f"Liczba zdjęć: {imgs}")
+        print(f"Wszystkich cyfr: {all}")
+        print("")
+        print(f"Poprawnie rozpoznanych cyfr (TP): {tp} czyli {tp*100/all:.2f}%")
+        print(f"Inne obiekty uznane za cyfry (FP): {fp} czyli {fp*100/all:.2f}%")
+        print(f"Nierozpoznanych cyfr (FN): {fn} czyli {fn*100/all:.2f}%")
+        print("")
+        print(f"Cyfra najczęściej poprawnie rozpoznawana (TP): {mode(true_positive)[0]}")
+        print(f"Cyfra najczęściej rozpoznawana tam gdzie jej nie ma (FP): {mode(false_positive)[0]}")
+        print(f"Cyfra najczęściej nierozpoznawana (FN): {mode(false_negative)[0]}")
+        print("")
+        print(f"Poprawnie rozpoznanych numerów: {corr} czyli {corr*100/imgs:.2f}%")
+        print(f"Najczęściej poprawnie rozpoznawany numer: {mode(correct)[0]}")
+
+    else:
+        print(f'{c["RED_TRESH"]};{c["BLUE_TRESH"]};{c["SMALL_TRESH"]};{c["BIG_TRESH"]};{c["BB_FACTOR_X"]};{c["BB_FACTOR_Y"]};{c["BB_MIN_WIDTH"]};{c["BB_MIN_HEIGHT"]};{c["GREY_BCKG_LVL"]};{tp*100/all:.2f};{fp*100/all:.2f};{fn*100/all:.2f};{mode(true_positive)[0]};{mode(false_positive)[0]};{mode(false_negative)[0]}; {corr*100/imgs:.2f}; {mode(correct)[0]}')
+
+
 
 ################################################################################
 # preprocessing
@@ -121,6 +155,7 @@ def mask_from_channel(img, x:int, treshold:int ):
 
     return img_chann_bw
 
+
 def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
     """eliminate not red enough or too blue segments"""
     # eliminate not red
@@ -137,13 +172,13 @@ def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
 #######################################################
 # slices
 
-def check_surroundings(slice, img_cont, img_src, img_clean):
+def check_surroundings(slice: tuple, img_cont, img_src, img_clean, consts: dict):
     """Check if background is gray enough"""
     x,y,w,h = slice
 
     # extend bounding box
-    dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
-    dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
+    dx = int((w*consts["BB_FACTOR_X"] - w)/2)
+    dy = int((h*consts["BB_FACTOR_Y"] - h)/2)
     begin_x = np.clip(x-dx, 0, IMG_W)
     end_x = np.clip(x+w+dx, 0, IMG_W)
     begin_y = np.clip(y-dy, 0, IMG_H)
@@ -166,48 +201,96 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
     slice_backgnd = np.where(slice_backgnd == 0, np.nan, slice_backgnd)
     median = np.nanmedian(slice_backgnd)
 
-    if median > 0.3: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
+    if median > consts["GREY_BCKG_LVL"]: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
 
 
-def process_slice(cnt, img_cont, img_src, img_clean):
+def process_slice(cnt, img_cont, img_src, img_clean, consts: dict):
     """determine wheter slice can be a number"""
     # draw bounding box
     x, y, w, h = cv2.boundingRect(cnt)
-    if (w < 5 or h < 5): raise SliceDiscardedException("Too thin")
+    if (w < consts["BB_MIN_WIDTH"] or h < consts["BB_MIN_HEIGHT"]): raise SliceDiscardedException("Too thin")
     if (w > h-2): raise SliceDiscardedException("Horizontal")
 
-    slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean)
+    slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean, consts)
     cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 2)
 
-    slice_bw = img_clean[y-2:y+h+2, x-2:x+w+2]
-    slice_bw = np.where(slice_bw == 1, 255, slice_bw) #change from [0;1] to [0;255]
+    begin_x = np.clip(x-2, 0, IMG_W)
+    end_x = np.clip(x+w+2, 0, IMG_W)
+    begin_y = np.clip(y-2, 0, IMG_H)
+    end_y = np.clip(y+h+2, 0, IMG_H)
+
+    slice_bw = img_clean[begin_y:end_y, begin_x:end_x]
+    # print(slice_bw)
+    slice_bw = np.where(slice_bw == 1, 255, slice_bw)
+    # print(len(slice_bw)) #change from [0;1] to [0;255]
+    # print(min(slice_bw.flatten()),
+     # max(slice_bw.flatten()))
+    # print(slice_bw)
     slice_bw = cv2.bitwise_not(slice_bw)
+    # print(slice_bw.dtype)
 
     return slice_bw
 
 ################################################################################
-# tekst preprocessing
+# tekst processing
 def digits_processing(img):
-    custom_config = r'--psm 10 --oem 3 outputbase digits' #single char, default ocr engine,
-    digit = pytesseract.image_to_string(img,config=custom_config)
+    """Digit from image"""
+    custom_config = r'--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789X' # single char, default ocr engine
+    # digit = pytesseract.image_to_string(img,config=custom_config)
+
+    digit_dict = pytesseract.image_to_data(img, config=custom_config, output_type=pytesseract.Output.DICT)
+    digit = digit_dict["text"][-1]
+    conf = digit_dict["conf"][-1]
+
     digit = digit.replace('\n', '')
-    return digit
+    digit = digit.strip()
 
-################################################################################
-# old
+    return (digit, conf)
 
-def draw_circles(img):
-    """ Detect circles in the image and draw them """
-    """ cf. [6]"""
 
-    output = img.copy()
-    circles = cv2.HoughCircles(edged, cv2.HOUGH_GRADIENT, 1.2, 100) #maxRadius=100
+def number_from_digits(digits_tupl: list):
+    """Return a number from digits. Normal numbers in Poznań are less than 18 (substitutive lines can have higher numbers, but not greater than 99)"""
+    digits_tupl = [d for d in digits_tupl if d[0] != '']
+    digits = [d[0] for d in digits_tupl]
 
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int") # (x, y) coordinates and radius to int
-        for (x, y, r) in circles:
-            # draw circle and center on the output image
-            cv2.circle(output, (x, y), r, (0, 255, 0), 3)
-            cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1) # center
+    if len(digits) == 0:
+        return ("", digits)
+    if len(digits) == 1:
+        return (digits[0][0], digits)
 
-    return output
+    digits = [d for d in digits_tupl if d[0] != 'X'] # remove 'X', since it can't occur in 2-digit number
+    digits = [d[0] for d in digits_tupl]
+    if len(digits) == 1:
+        return (digits[0][0], digits)
+
+    if len(digits) > 2:
+        # choose two with the highest confidence
+        digits_tupl = sorted(digits_tupl, key=lambda x: x[1], reverse=True)
+        digits_tupl = digits_tupl[0:2]
+        digits = [d[0] for d in digits_tupl]
+
+    if len(digits) == 2:
+        first = int(digits[0])
+        second = int(digits[1])
+        if first > second:
+            number = 10*second + first
+        else:
+            number = 10*first + second
+
+    if int(number) > 18:
+        print("Probably wrong number: ", number)
+
+    return (str(number), digits)
+
+
+def analyze_results(digits: set, number:str, filename: str):
+    """return stats for result"""
+    true_number = filename.split("_")[0]
+
+    true_positive = [x for x in digits if x in true_number] #true_number & digits
+    false_positive = [x for x in digits if x not in true_number] #digits - true_number
+    false_negative = [x for x in true_number if x not in digits] # true_number - digits
+
+    correct_number = number == true_number
+
+    return (true_positive, false_positive, false_negative, correct_number)
