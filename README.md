@@ -20,9 +20,6 @@ Na tak otrzymanym zdjęciu wykrywane są kontury poszczególnych obiektów.
 #### Przetwarzanie wykrytych obiektów
 Na tym etapie następuje sprawdzenie, czy dany obiekt może być cyfrą. Dookoła każdego konturu tworzone są bounding boxy. Odrzucane są obiekty bardzo wąskie oraz poziome. Następnie bounding boxy są poszerzane, i sprawdzane jest tło za obiektem. Zostawiane są tylko te, których tło jest szare.
 
-<!-- ![rozpoznane obiekty](./graphics/objects.png) -->
-<img src="./graphics/objects.png" alt="rozpoznane obiekty" height=50/>
-
 Ostatnim etapem jest rozpoznanie cyfry na otrzymanym fragmencie zdjęcia. Do tego celu użyto silnika OCR o otwartym kodzie źródłowym – [Tesseract](https://github.com/tesseract-ocr/tesseract), ustawionego tak, by wykrywał jedynie pojedyncze cyfry lu znak 'X'.
 
 Otrzymane cyfry są następnie sprawdzane pod kątem poprawności (numery tramwajów zwykle są mniejsze od 18, a w szczególnych przypadkach < 99 lub równe 'X').
@@ -44,8 +41,8 @@ Zdarzało się również, że Tesseract błędnie rozpoznawał (lub nie rozpozna
 
 Dużą poprawę rezultatów daje sprawdzanie tła, na którym znajduje się potencjalna liczba. Na poniższym zdjęciu niebiekimi kwadratami są zaznaczone wszystkie wcześniej wykryte obiekty, a zielonym – te po określeniu koloru tła (13_01)
 
-![szok i niedowierzanie](./graphics/super_rects.png)
+<img src="./graphics/super_rects.png" alt="szok i niedowierzanie" height=300/>
 
-Na tym zdjęciu z kolei widzimy niepoprawnie poprawne wykrycie
+Na tym zdjęciu z kolei widzimy "niepoprawnie poprawne" wykrycie. Numer tramwaju nie został wykryty, jednakże przypadkowo wykryty krzak został rozpoznany jako '5', przez co wynik jest poprawny.
 
 ![task_failed_successfully](./graphics/task_failed_successfully.png)
