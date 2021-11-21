@@ -27,7 +27,7 @@ def recognize_tram_number(c: dict):
         contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         img_cont = img_norm.copy()
-        cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
+        # cv2.drawContours(img_cont, contours, -1, (255,0,0), 2)
 
         digits = []
         for cnt in contours:
@@ -49,7 +49,8 @@ def recognize_tram_number(c: dict):
 
         imgs_obr.append(res)
 
-    show_array(imgs_obr, "results")
+    show_array(imgs_obr, filename="results", cols=5)
+
 
     print_stats(c, len(tram_names), true_positive, false_positive, false_negative, correct, long=False)
     print_stats(c, len(tram_names), true_positive, false_positive, false_negative, correct)

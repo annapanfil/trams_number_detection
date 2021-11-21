@@ -16,14 +16,14 @@ def show_array(arr, filename="tramwaje", dpi=30, cols = None):
     if cols == None:
         cols = int(np.sqrt(len(arr)))
     rows = ceil(len(arr)/cols)
-    plt.figure(figsize=(cols*30,rows*20))
+    plt.figure(figsize=(cols*30,rows*10), tight_layout=True)
 
     for i,img in enumerate(arr):
         ax = plt.subplot(rows, cols, i+1)
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig("output/"+filename, dpi=dpi)
+    plt.savefig("graphics/"+filename, dpi=dpi)
     # plt.show()
 
 def show(*args, filename = None):
@@ -65,7 +65,7 @@ def print_stats(c: dict, imgs: int, true_positive: list, false_positive: list, f
     fp = len(false_positive)
     fn = len(false_negative)
     corr = len(correct)
-    all = tp + fp + fn
+    all = tp + fn
 
     if long:
         print("PARAMETRY\n------------------------")
@@ -77,13 +77,13 @@ def print_stats(c: dict, imgs: int, true_positive: list, false_positive: list, f
         print(f"Wszystkich cyfr: {all}")
         print("")
         print(f"Poprawnie rozpoznanych cyfr (TP): {tp} czyli {tp*100/all:.2f}%")
-        print(f"Inne obiekty uznane za cyfry (FP): {fp} czyli {fp*100/all:.2f}%")
-        print(f"Nierozpoznanych cyfr (FN): {fn} czyli {fn*100/all:.2f}%")
+        print(f"Inne obiekty uznane za cyfry (FP): {fp}")
+        print(f"Nierozpoznanych cyfr (FN): {fn}%")
         print("")
-        print(f"Cyfra najczęściej poprawnie rozpoznawana (TP): {mode(true_positive)[0]}")
-        print(f"Cyfra najczęściej rozpoznawana tam gdzie jej nie ma (FP): {mode(false_positive)[0]}")
-        print(f"Cyfra najczęściej nierozpoznawana (FN): {mode(false_negative)[0]}")
-        print("")
+        # print(f"Cyfra najczęściej poprawnie rozpoznawana (TP): {mode(true_positive)[0]}")
+        # print(f"Cyfra najczęściej rozpoznawana tam gdzie jej nie ma (FP): {mode(false_positive)[0]}")
+        # print(f"Cyfra najczęściej nierozpoznawana (FN): {mode(false_negative)[0]}")
+        # print("")
         print(f"Precyzja algorytmu rozpoznawania cyfr: {tp*100/(tp+fp):.2f}%")
         print(f"Pełność algorytmu rozpoznawania cyfr: {tp*100/(tp+fn):.2f}%")
 
@@ -188,7 +188,7 @@ def check_surroundings(slice: tuple, img_cont, img_src, img_clean, consts: dict)
     begin_y = np.clip(y-dy, 0, IMG_H)
     end_y = np.clip(y+h+dy, 0, IMG_H)
 
-    cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 2)
+    # cv2.rectangle(img_cont, (begin_x,begin_y), (end_x, end_y), (0,0,255), 2)
 
     # get slices of: original image, values from hsv and cleaned image
     slice = img_src[begin_y:end_y, begin_x:end_x]
