@@ -23,8 +23,6 @@ def recognize_tram_number(c: dict):
         cleaned = discard_small_and_big(masked, c["SMALL_TRESH"], c["BIG_TRESH"])
         cleaned = cleaned.astype(np.uint8)
 
-        cleaned = apply_masks(img_norm, cleaned, c["RED_TRESH"], c["BLUE_TRESH"])
-
         # recognize edges
         contours, hierarchy = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
