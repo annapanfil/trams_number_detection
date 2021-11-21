@@ -1,4 +1,6 @@
-from functions import *
+from img_processing import *
+from text_processing import *
+from showing import *
 
 def recognize_tram_number(c: dict):
     imgs_obr = []
