@@ -1,4 +1,4 @@
-# from imports import *
+from imports import *
 
 
 class SliceDiscardedException(Exception):
@@ -59,15 +59,15 @@ def results_comparision(img_norm, img_cont, digits: set, filename: str):
     return res
 
 
-def print_stats(imgs: int, true_positive: list, false_positive: list, false_negative: list, long=True):
+def print_stats(c: dict, imgs: int, true_positive: list, false_positive: list, false_negative: list, long=True):
     tp = len(true_positive)
     fp = len(false_positive)
     fn = len(false_negative)
     all = tp + fp + fn
     if long:
         print("PARAMETRY\n------------------------")
-        print(f"RED_TRESH {RED_TRESH}\nBLUE_TRESH {BLUE_TRESH}\nSMALL_TRESH {SMALL_TRESH}\nBIG_TRESH {BIG_TRESH}")
-        print(f"BOUNDING_BOX_FACTOR_X {BOUNDING_BOX_FACTOR_X}\nBOUNDING_BOX_FACTOR_Y {BOUNDING_BOX_FACTOR_Y}\nBB_MIN_WIDHT {BB_MIN_WIDHT}\nBB_MIN_HEIGHT {BB_MIN_HEIGHT}\nGREY_BCKG_LVL {GREY_BCKG_LVL}")
+        print(f'RED_TRESH {c["RED_TRESH"]}\nBLUE_TRESH {c["BLUE_TRESH"]}\nSMALL_TRESH {c["SMALL_TRESH"]}\nBIG_TRESH {c["BIG_TRESH"]}')
+        print(f'BB_FACTOR_X {c["BB_FACTOR_X"]}\nBB_FACTOR_Y {c["BB_FACTOR_Y"]}\nBB_MIN_WIDTH {c["BB_MIN_WIDTH"]}\nBB_MIN_HEIGHT {c["BB_MIN_HEIGHT"]}\nGREY_BCKG_LVL {c["GREY_BCKG_LVL"]}')
         print("")
         print("STATYSTYKI\n------------------------")
         print(f"Liczba zdjęć: {imgs}")
@@ -81,7 +81,7 @@ def print_stats(imgs: int, true_positive: list, false_positive: list, false_nega
         print(f"Cyfra najczęściej rozpoznawana tam gdzie jej nie ma (FP): {mode(false_positive)[0]}")
         print(f"Cyfra najczęściej nierozpoznawana (FN): {mode(false_negative)[0]}")
     else:
-        print(f"{RED_TRESH};{BLUE_TRESH};{SMALL_TRESH};{BIG_TRESH};{BOUNDING_BOX_FACTOR_X};{BOUNDING_BOX_FACTOR_Y};{BB_MIN_WIDHT};{BB_MIN_HEIGHT};{GREY_BCKG_LVL};{tp*100/all:.2f};{fp*100/all:.2f};{fn*100/all:.2f};{mode(true_positive)[0]};{mode(false_positive)[0]};{mode(false_negative)[0]}")
+        print(f'{c["RED_TRESH"]};{c["BLUE_TRESH"]};{c["SMALL_TRESH"]};{c["BIG_TRESH"]};{c["BB_FACTOR_X"]};{c["BB_FACTOR_Y"]};{c["BB_MIN_WIDTH"]};{c["BB_MIN_HEIGHT"]};{c["GREY_BCKG_LVL"]};{tp*100/all:.2f};{fp*100/all:.2f};{fn*100/all:.2f};{mode(true_positive)[0]};{mode(false_positive)[0]};{mode(false_negative)[0]}')
 
 
 
@@ -148,6 +148,7 @@ def mask_from_channel(img, x:int, treshold:int ):
 
     return img_chann_bw
 
+
 def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
     """eliminate not red enough or too blue segments"""
     # eliminate not red
@@ -164,13 +165,13 @@ def apply_masks(img_src, img_to_mask, red_tresh, blue_tresh):
 #######################################################
 # slices
 
-def check_surroundings(slice, img_cont, img_src, img_clean):
+def check_surroundings(slice: tuple, img_cont, img_src, img_clean, consts: dict):
     """Check if background is gray enough"""
     x,y,w,h = slice
 
     # extend bounding box
-    dx = int((w*BOUNDING_BOX_FACTOR_X - w)/2)
-    dy = int((h*BOUNDING_BOX_FACTOR_Y - h)/2)
+    dx = int((w*consts["BB_FACTOR_X"] - w)/2)
+    dy = int((h*consts["BB_FACTOR_Y"] - h)/2)
     begin_x = np.clip(x-dx, 0, IMG_W)
     end_x = np.clip(x+w+dx, 0, IMG_W)
     begin_y = np.clip(y-dy, 0, IMG_H)
@@ -193,22 +194,33 @@ def check_surroundings(slice, img_cont, img_src, img_clean):
     slice_backgnd = np.where(slice_backgnd == 0, np.nan, slice_backgnd)
     median = np.nanmedian(slice_backgnd)
 
-    if median > GREY_BCKG_LVL: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
+    if median > consts["GREY_BCKG_LVL"]: raise SliceDiscardedException(f'Background not gray (median = {median:.2f})')
 
 
-def process_slice(cnt, img_cont, img_src, img_clean):
+def process_slice(cnt, img_cont, img_src, img_clean, consts: dict):
     """determine wheter slice can be a number"""
     # draw bounding box
     x, y, w, h = cv2.boundingRect(cnt)
-    if (w < BB_MIN_WIDHT or h < BB_MIN_HEIGHT): raise SliceDiscardedException("Too thin")
+    if (w < consts["BB_MIN_WIDTH"] or h < consts["BB_MIN_HEIGHT"]): raise SliceDiscardedException("Too thin")
     if (w > h-2): raise SliceDiscardedException("Horizontal")
 
-    slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean)
+    slice = check_surroundings((x,y,w,h), img_cont, img_src, img_clean, consts)
     cv2.rectangle(img_cont,  (x,y), (x+w, y+h), (0,255,0), 2)
 
-    slice_bw = img_clean[y-2:y+h+2, x-2:x+w+2]
-    slice_bw = np.where(slice_bw == 1, 255, slice_bw) #change from [0;1] to [0;255]
+    begin_x = np.clip(x-2, 0, IMG_W)
+    end_x = np.clip(x+w+2, 0, IMG_W)
+    begin_y = np.clip(y-2, 0, IMG_H)
+    end_y = np.clip(y+h+2, 0, IMG_H)
+
+    slice_bw = img_clean[begin_y:end_y, begin_x:end_x]
+    # print(slice_bw)
+    slice_bw = np.where(slice_bw == 1, 255, slice_bw)
+    # print(len(slice_bw)) #change from [0;1] to [0;255]
+    # print(min(slice_bw.flatten()),
+     # max(slice_bw.flatten()))
+    # print(slice_bw)
     slice_bw = cv2.bitwise_not(slice_bw)
+    # print(slice_bw.dtype)
 
     return slice_bw
 
