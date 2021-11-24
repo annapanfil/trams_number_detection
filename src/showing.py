@@ -15,7 +15,7 @@ def show_array(arr, filename="tramwaje", dpi=30, cols = None):
         ax.set_xticks([])
         ax.set_yticks([])
         imshow(img, cmap='gray')
-    plt.savefig("graphics/"+filename, dpi=dpi)
+    plt.savefig("../output/"+filename, dpi=dpi)
     # plt.show()
 
 def show(*args, filename = None):
@@ -26,7 +26,7 @@ def show(*args, filename = None):
         imshow(img, cmap='gray')
     if filename != None:
         print("Saved to output/"+filename)
-        plt.savefig("output/"+filename)
+        plt.savefig("../output/"+filename)
     plt.show()
 
 
@@ -45,7 +45,7 @@ def results_comparision(img_norm, img_cont, number: str, filename: str):
     # img_norm_mini = cv2.resize(img_norm, (MINI_IMG_W, MINI_IMG_H))
     img_cont_mini = cv2.resize(img_cont, (MINI_IMG_W, MINI_IMG_H))
 
-    text = ["img: "+ filename, "Recognized text: "+number]
+    text = ["Nazwa zdjecia: "+ filename, "Rozpoznany numer: "+number]
     res = np.hstack((img_cont_mini, show_text(text))) #img_norm_mini
 
     return res

@@ -132,13 +132,7 @@ def process_slice(cnt, img_cont, img_src, img_clean, consts: dict):
     end_y = np.clip(y+h+2, 0, IMG_H)
 
     slice_bw = img_clean[begin_y:end_y, begin_x:end_x]
-    # print(slice_bw)
     slice_bw = np.where(slice_bw == 1, 255, slice_bw)
-    # print(len(slice_bw)) #change from [0;1] to [0;255]
-    # print(min(slice_bw.flatten()),
-     # max(slice_bw.flatten()))
-    # print(slice_bw)
     slice_bw = cv2.bitwise_not(slice_bw)
-    # print(slice_bw.dtype)
 
     return slice_bw

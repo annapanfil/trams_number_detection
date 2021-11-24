@@ -12,7 +12,7 @@ def recognize_tram_number(c: dict):
 
     for tram in tram_names:
         # read image and convert to gray based on saturation
-        img = imread("dane/"+tram+".jpg")
+        img = imread("../dane/"+tram+".jpg")
         img_norm = normalize_size(img)
         img_sat = rgb2hsv(img_norm)[:,:,1]
 
@@ -56,6 +56,7 @@ def recognize_tram_number(c: dict):
 
     print_stats(c, len(tram_names), true_positive, false_positive, false_negative, correct, long=False)
     print_stats(c, len(tram_names), true_positive, false_positive, false_negative, correct)
+
 
 if __name__ == '__main__':
 
