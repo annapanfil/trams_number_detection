@@ -33,7 +33,7 @@ Otrzymane cyfry są następnie sprawdzane pod kątem poprawności. Numery tramwa
 # Wyniki
 Ze strony [fotozajezdnia.pl](https://fotozajezdnia.pl/categories.php?cat_id=465) pozyskano 102 zdjęcia tramwajów. Są to głównie pojazdy Moderus Gamma, Moderus Beta, Tramino s150p, Tatra RT6N1 oraz wagony 105N. Zdjęcia są wykonane w różych warunkach oświetleniowych, różnymi aparatami, w różnych miejscach Poznania, z różną rozdzielczością. Mają też różne wymiary. Na zdjęciach znajdowało się 161 cyfr wchodzących w skład numerów tramwajów oraz jeden znak 'X'.
 
-Algorytm rozpoznał poprawnie 75,31% cyfr (122). Na ich podstawie **poprawnie określił 52,94% numerów tramwajów (54).** 33 obiekty zostały błędnie uznane za cyfry (fałszywie pozytywne), natomiast 40 cyfr nie zostało rozpoznanych (fałszywnie negatywne). Zatem precyzję algorytmu (w rozpoznawaniu cyfr, a nie liczb) można określić na 78,71%, a jego pełność na 75,31%.
+Algorytm rozpoznał poprawnie 75,31% cyfr (122). Na ich podstawie **poprawnie określił 52,94% numerów tramwajów (54).** 33 obiekty zostały błędnie uznane za cyfry (fałszywie pozytywne), natomiast 40 cyfr nie zostało rozpoznanych (fałszywnie negatywne). **Zatem precyzję algorytmu (w rozpoznawaniu cyfr, a nie liczb) można określić na 78,71%**, a jego pełność na 75,31%.
 Rezultaty można zobaczyć w [repozytorium](https://github.com/panka134/trams_number_detection/graphics/results.png).
 
 ## Analiza
